@@ -13,6 +13,7 @@
 #include "utils.h"
 #include "window_manager.hpp"
 #include "kwin_version.hpp"
+#include <qsize.h>
 
 #if KWIN_VERSION < KWIN_VERSION_CODE(6, 5, 80)
 #  include "kwin_compat_6_5.hpp"
@@ -894,6 +895,36 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
         }
     }
 
+    if (!renderInfo.blurCacheTexture.has_value() || renderInfo.blurCacheTexture.value()->size() != backgroundRect.size() || renderInfo.blurCacheTexture.value()->internalFormat() != textureFormat) {
+        renderInfo.blurCacheFramebuffer.reset();
+        renderInfo.blurCacheTexture.reset();
+
+        glClearColor(0, 0, 0, 0);
+        auto texture = GLTexture::allocate(textureFormat, backgroundRect.size());
+        if (!texture) {
+            qCWarning(KWIN_BLUR) << BBDX::LOG_PREFIX << "Failed to allocate an offscreen texture";
+            return;
+        }
+        texture->setFilter(GL_LINEAR);
+        texture->setWrapMode(GL_CLAMP_TO_EDGE);
+
+        auto framebuffer = std::make_unique<GLFramebuffer>(texture.get());
+        if (!framebuffer->valid()) {
+            qCWarning(KWIN_BLUR) << BBDX::LOG_PREFIX << "Failed to create an offscreen framebuffer";
+            return;
+        }
+#if defined(BETTERBLUR_X11)
+        auto *context = OpenGlContext::currentContext();
+#else
+        auto *context = EglContext::currentContext();
+#endif
+        context->pushFramebuffer(framebuffer.get());
+        glClear(GL_COLOR_BUFFER_BIT);
+        context->popFramebuffer();
+        renderInfo.blurCacheTexture.emplace(std::move(texture));
+        renderInfo.blurCacheFramebuffer.emplace(std::move(framebuffer));
+    }
+
     // Fetch the pixels behind the shape that is going to be blurred.
 #if KWIN_VERSION < KWIN_VERSION_CODE(6, 5, 80)
     const QRegion dirtyRegion = deviceRegion & backgroundRect;
@@ -1146,7 +1177,9 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
             glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
         }
 
+        GLFramebuffer::pushFramebuffer(renderInfo.blurCacheFramebuffer->get());
         vbo->draw(GL_TRIANGLES, 6, vertexCount);
+        GLFramebuffer::popFramebuffer();
 
         if (modulation < 1.0) {
             glDisable(GL_BLEND);
@@ -1177,7 +1210,9 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
             m_noisePass.shader->setUniform(m_noisePass.mvpMatrixLocation, projectionMatrix);
             m_noisePass.shader->setUniform(m_noisePass.noiseTextureSizeLocation, QVector2D(noiseTexture->width(), noiseTexture->height()));
 
+            GLFramebuffer::pushFramebuffer(renderInfo.blurCacheFramebuffer->get());
             noiseTexture->bind();
+            GLFramebuffer::popFramebuffer();
 
             vbo->draw(GL_TRIANGLES, 6, vertexCount);
 
@@ -1188,7 +1223,9 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
     }
 
     if (const BorderRadius cornerRadius = m_windowManager.getEffectiveBorderRadius(w); !cornerRadius.isNull()) {
+        GLFramebuffer::pushFramebuffer(renderInfo.blurCacheFramebuffer->get());
         m_roundedCornersPass.apply(cornerRadius, viewport, scaledBackgroundRect, renderInfo, w, data, vbo, vertexCount);
+        GLFramebuffer::popFramebuffer();
     }
 
     vbo->unbindArrays();

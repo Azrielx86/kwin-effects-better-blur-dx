@@ -12,6 +12,7 @@
 #include "settings.h"
 #include "window_manager.hpp"
 #include "kwin_version.hpp"
+#include <opengl/glframebuffer.h>
 
 #if KWIN_VERSION < KWIN_VERSION_CODE(6, 5, 80)
 #  include "kwin_compat_6_5.hpp"
@@ -45,6 +46,9 @@ struct BlurRenderData
     /// contains not blurred background behind the window, it's cached.
     std::vector<std::unique_ptr<GLTexture>> textures;
     std::vector<std::unique_ptr<GLFramebuffer>> framebuffers;
+
+    std::optional<std::unique_ptr<GLTexture>> blurCacheTexture;
+    std::optional<std::unique_ptr<GLFramebuffer>> blurCacheFramebuffer;
 };
 
 struct BlurEffectData
