@@ -36,7 +36,7 @@ BBDX::RoundedCornersPass::RoundedCornersPass() {
 
 void BBDX::RoundedCornersPass::apply(const KWin::BorderRadius &cornerRadius,
                                      const KWin::RenderViewport &viewport,
-                                     const QRect &backgroundRect,
+                                     const QRect &scaledBackgroundRect,
                                      const KWin::BlurRenderData &renderInfo,
                                      const KWin::EffectWindow *w,
                                      const KWin::WindowPaintData &data,
@@ -49,7 +49,7 @@ void BBDX::RoundedCornersPass::apply(const KWin::BorderRadius &cornerRadius,
         KWin::ShaderManager::instance()->pushShader(m_shader.get());
 
         QMatrix4x4 projectionMatrix;
-        projectionMatrix.ortho(QRectF(0.0, 0.0, backgroundRect.width(), backgroundRect.height()));
+        projectionMatrix.ortho(QRectF(0.0, 0.0, scaledBackgroundRect.width(), scaledBackgroundRect.height()));
 
         // should contain the raw un-blurred pixels
         const auto &read = renderInfo.framebuffers[0];
@@ -61,7 +61,7 @@ void BBDX::RoundedCornersPass::apply(const KWin::BorderRadius &cornerRadius,
             w->frameGeometry().height() * data.yScale(),
         };
         const QRectF nativeBox = KWin::snapToPixelGridF(KWin::scaledRect(transformedRect, viewport.scale()))
-                                     .translated(-backgroundRect.topLeft());
+                                     .translated(-scaledBackgroundRect.topLeft());
         const KWin::BorderRadius nativeCornerRadius = cornerRadius.scaled(viewport.scale()).rounded();
 
         m_shader->setUniform(m_mvpMatrixLocation, projectionMatrix);
@@ -74,8 +74,8 @@ void BBDX::RoundedCornersPass::apply(const KWin::BorderRadius &cornerRadius,
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-        // BBDX: draw to cache texture, in local pixels
-        vbo->draw(GL_TRIANGLES, 0, 6);
+        // BBDX: draw to cache texture, in logical, scaled pixels
+        vbo->draw(GL_TRIANGLES, 6, 6);
 
         glDisable(GL_BLEND);
 
