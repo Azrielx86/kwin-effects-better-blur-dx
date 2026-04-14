@@ -13,10 +13,6 @@
 #include "utils.h"
 #include "window_manager.hpp"
 #include "kwin_version.hpp"
-#include <epoxy/gl_generated.h>
-#include <iterator>
-#include <opengl/glshadermanager.h>
-#include <qsize.h>
 
 #if KWIN_VERSION < KWIN_VERSION_CODE(6, 5, 80)
 #  include "kwin_compat_6_5.hpp"
@@ -32,6 +28,7 @@
 #include <effect/effect.h>
 #include <effect/effecthandler.h>
 #include <opengl/glplatform.h>
+#include <opengl/glshadermanager.h>
 #include <opengl/glutils.h>
 #if KWIN_VERSION >= KWIN_VERSION_CODE(6, 6, 4)
 #include <scene/backgroundeffectitem.h>
