@@ -746,11 +746,6 @@ bool BlurEffect::shouldBlur(const EffectWindow *w, int mask, const WindowPaintDa
 
 void BlurEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
 {
-    // BBDX:
-    // invalidate first so actual paint
-    // should have the info ready
-    m_windowManager->invalidateBlurCacheAbove(w);
-
     blur(renderTarget, viewport, w, mask, deviceRegion, data);
 
     // Draw the window over the blurred area
