@@ -87,7 +87,6 @@ void BBDX::Window::slotWindowFrameGeometryChanged() {
     updateForceBlurRegion();
     refreshMaximizedState();
     invalidateBlurCache();
-    //m_windowManager->invalidateBlurCacheBelow(effectwindow());
 
     // Not sure if this is the best place to unset
     // this but seems to work fine for now
@@ -201,21 +200,6 @@ void BBDX::Window::triggerBlurRegionUpdate() const {
 
 bool BBDX::Window::invalidateBlurCache() const {
     return m_windowManager->invalidateBlurCache(m_effectwindow);
-}
-
-bool BBDX::Window::canReceiveBlurCacheInvalidation() {
-    const auto elapsed = std::chrono::steady_clock::now() - m_lastBlurCacheInvalidationReceived;
-
-    // TODO: make this not hardcoded
-    constexpr auto RATE_LIMIT_FPS = 15;
-    constexpr auto RATE_LIMIT_WAIT_MS = std::chrono::milliseconds{1000 / RATE_LIMIT_FPS};
-
-    if (elapsed < RATE_LIMIT_WAIT_MS) {
-        return false;
-    }
-
-    m_lastBlurCacheInvalidationReceived = std::chrono::steady_clock::now();
-    return true;
 }
 
 bool BBDX::Window::opacityChangedFromOriginal() {
