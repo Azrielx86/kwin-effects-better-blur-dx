@@ -33,10 +33,10 @@ bool BBDX::BlurCacheData::invalidate() {
 }
 
 BBDX::BlurCache::BlurCache() {
-    m_texturePass.shader = KWin::ShaderManager::instance()->generateShaderFromFile(KWin::ShaderTrait::MapTexture,
+    m_textureComparePass.shader = KWin::ShaderManager::instance()->generateShaderFromFile(KWin::ShaderTrait::MapTexture,
                                                                            QStringLiteral(":/effects/better_blur_dx/shaders/vertex.vert"),
                                                                            QStringLiteral(":/effects/better_blur_dx/shaders/texture_compare.frag"));
-    if (!m_texturePass.shader) {
+    if (!m_textureComparePass.shader) {
         qCWarning(BLUR_CACHE) << BBDX::LOG_PREFIX << "Failed to load texture compare pass shader";
         return;
     } else {
